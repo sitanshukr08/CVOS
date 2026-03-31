@@ -45,20 +45,22 @@ def save_session(state):
 
 current_state = load_session()
 
-def safe_merge(current, new_state):
-    for key in current.keys():
-        if key in new_state and new_state[key] is not None:
-            if isinstance(new_state[key], list) and len(new_state[key]) == 0 and len(current[key]) > 0:
-                continue
-            current[key] = new_state[key]
-            
-    domain, conf = get_hybrid_domain(current)
-    if conf > 0.3:
-        current["inferred_domain"] = domain
-    else:
-        current["inferred_domain"] = "General"
-        
-    return current
+def safe_merge(current_state, new_data):
+    ALLOWED_FIELDS = {
+        "name", "email", "phone", "github_username", "linkedin", 
+        "education", "experience", "skills", "projects", "profile"
+    }
+    
+    for key, value in new_data.items():
+        if key in ALLOWED_FIELDS:
+            if isinstance(value, list) and isinstance(current_state.get(key), list):
+                current_state[key].extend(value)
+            elif isinstance(value, dict) and isinstance(current_state.get(key), dict):
+                current_state[key].update(value)
+            else:
+                current_state[key] = value
+                
+    return current_state
 
 def validate_state(state):
     missing = []
@@ -127,7 +129,7 @@ def chat_interface():
         save_session(current_state)
         
         if response.get("feedback_for_user"):
-            print(f"\n💡 Tip: {response['feedback_for_user']}")
+            print(f"\nTip: {response['feedback_for_user']}")
             
         print(f"\nAI: {response['reply_to_user']}\n")
         history.append({"role": "assistant", "content": response['reply_to_user']})
@@ -135,16 +137,18 @@ def chat_interface():
         if current_state.get("ready_to_generate"):
             is_valid, error_msg = validate_state(current_state)
             if not is_valid:
-                print(f"❌ System Blocked: {error_msg}")
+                print(f"System Blocked: {error_msg}")
                 current_state["ready_to_generate"] = False
                 save_session(current_state)
                 continue
             
-            score, issues = evaluate_profile(current_state)
-            print(f"\n📊 RESUME QUALITY SCORE: {score}/100")
+            eval_result = evaluate_profile(current_state)
+            score = eval_result["global_score"]
+            issues = eval_result["issues"]
+            print(f"\nRESUME QUALITY SCORE: {score}/100")
             
             if issues:
-                print("⚠️ Improvements detected:")
+                print("Improvements detected:")
                 for issue in issues:
                     print(f"  - [-{issue['penalty']} pts] {issue['msg']}")
                 
@@ -155,25 +159,25 @@ def chat_interface():
                     print("\nAI: Let's fix those issues. What would you like to update?")
                     continue
                 
-            print("🚀 Compiling...")
+            print("Compiling...")
             try:
                 r = requests.post(API_URL, json=current_state)
                 if r.status_code == 200:
                     fname = f"{current_state['name'].replace(' ', '_')}_Resume.pdf"
                     with open(fname, 'wb') as f:
                         f.write(r.content)
-                    print(f"✅ Success! Saved as {fname}")
+                    print(f"Success! Saved as {fname}")
                     break
                 else:
                     try:
                         err_msg = r.json().get("detail", r.text)
                     except:
                         err_msg = r.text
-                    print(f"❌ Backend Error {r.status_code}: {err_msg}")
+                    print(f"Backend Error {r.status_code}: {err_msg}")
                     current_state["ready_to_generate"] = False
                     save_session(current_state)
             except Exception as e:
-                print(f"❌ Connection Error: {e}")
+                print(f"Connection Error: {e}")
                 break
 
 if __name__ == "__main__":

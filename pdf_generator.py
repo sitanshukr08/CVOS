@@ -84,8 +84,8 @@ def generate_pdf(user_data: dict, output_filename: str = "ATS_Resume"):
                 os.remove(f"{output_filename}{ext}")
                 
     except subprocess.TimeoutExpired:
-        print("❌ Error: LaTeX compilation timed out. Possible syntax lock.")
+        print("Error: LaTeX compilation timed out. Possible syntax lock.")
         raise Exception("PDF generation timed out.")
     except subprocess.CalledProcessError as e:
-        print(f"❌ Error compiling PDF. Check {output_filename}.log for details.")
+        print(f"Error compiling PDF. Check {output_filename}.log for details.")
         raise Exception("Failed to compile PDF.")
