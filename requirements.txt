@@ -1,18 +1,10 @@
-# API Framework
 fastapi==0.110.0
 uvicorn==0.28.0
-
-# LLM Integration
 groq==0.4.2
-
-# Data Fetching (GitHub API, etc.)
 requests==2.31.0
-
-# LaTeX Templating
 Jinja2==3.1.3
-
-# Environment Variable Management
 python-dotenv==1.0.1
-
-# (Optional for later) Vector DB / RAG
-# chromadb==0.4.24
+chromadb==0.4.24
+pandas
+numpy<2.0
+httpx<0.28.0

@@ -1,14 +1,17 @@
-# Environments
 .env
 __pycache__/
 venv/
 .venv/
 
-# Session & Data
 session.json
 
-# Generated Output
 *.pdf
 *.log
 *.aux
 *.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+dataset/
+chroma_db/
