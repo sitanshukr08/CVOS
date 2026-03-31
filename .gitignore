@@ -1,6 +1,8 @@
 # Environments
 .env
 __pycache__/
+venv/
+.venv/
 
 # Session & Data
 session.json
