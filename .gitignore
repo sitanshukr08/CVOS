@@ -1,0 +1,12 @@
+# Environments
+.env
+__pycache__/
+
+# Session & Data
+session.json
+
+# Generated Output
+*.pdf
+*.log
+*.aux
+*.out
