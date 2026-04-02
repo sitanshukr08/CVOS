@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color: #f4efe4;
+    background-color: #091118;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+  }
+
+  * {
+    @apply box-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply m-0 min-h-screen bg-[#091118] text-[#f4efe4];
+    background-image:
+      radial-gradient(circle at top left, rgba(234, 179, 8, 0.12), transparent 22%),
+      radial-gradient(circle at 85% 10%, rgba(14, 165, 233, 0.14), transparent 24%),
+      linear-gradient(180deg, #081018 0%, #0d1620 36%, #101f27 100%);
+  }
+
+  body::selection {
+    @apply bg-amber-300 text-slate-950;
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_25px_80px_rgba(0,0,0,0.25)];
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translate(100px, -100px) rotate(90deg) scale(1.1);
+  }
+  50% {
+    transform: translate(-100px, 100px) rotate(180deg) scale(0.9);
+  }
+  75% {
+    transform: translate(50px, 50px) rotate(270deg) scale(1.05);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
