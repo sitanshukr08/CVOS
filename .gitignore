@@ -1,0 +1,17 @@
+.env
+__pycache__/
+venv/
+.venv/
+
+session.json
+
+*.pdf
+*.log
+*.aux
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+dataset/
+chroma_db/
