@@ -68,6 +68,20 @@ async def chat_endpoint(request: ChatRequest):
         except Exception:
             current_score = "Unknown"
 
+        required_fields = [
+            ("targetRole", "Target Job Role"),
+            ("name", "Full Name"),
+            ("email", "Email Address"),
+            ("githubUsername", "GitHub Username")
+        ]
+        
+        missing_fields = [desc for key, desc in required_fields if not compressed_state.get(key) or len(str(compressed_state.get(key)).strip()) < 2]
+        
+        if missing_fields:
+            next_step_directive = f"CRITICAL DIRECTIVE: Ask the user to provide: '{missing_fields[0]}'."
+        else:
+            next_step_directive = "Basic info is complete. Tell them you are ready to auto-generate sections or review specific parts."
+
         gh_user = request.current_state.get("githubUsername") or request.current_state.get("github_username")
         
         if not gh_user and request.user_input:
@@ -75,31 +89,37 @@ async def chat_endpoint(request: ChatRequest):
             if gh_match:
                 gh_user = gh_match.group(1).strip()
 
-        gh_repos_context = "User has not provided a GitHub username yet."
+        gh_repos_context = "No GitHub data available."
         if gh_user:
             try:
-                repos = await asyncio.to_thread(get_best_repos, gh_user, limit=3)
+                repos = await asyncio.to_thread(get_best_repos, gh_user, limit=5)
                 if repos:
-                    repo_details = [f"{r.get('name')} (Desc: {r.get('description', 'None')})" for r in repos]
-                    gh_repos_context = f"Successfully fetched GitHub repos for {gh_user}: " + " | ".join(repo_details)
+                    repo_details = []
+                    for r in repos:
+                        langs = ", ".join([f"{k}" for k,v in r.get('languages', {}).items()])
+                        deps = r.get('dependencies', 'None')
+                        repo_details.append(f"[{r.get('name')} | Langs: {langs} | Deps: {deps}]")
+                    gh_repos_context = f"Deep Scanned GitHub Data for {gh_user}:\n" + "\n".join(repo_details)
                 else:
-                    gh_repos_context = f"Found GitHub user {gh_user} but no public repositories."
+                    gh_repos_context = f"No public repositories found for {gh_user}."
             except Exception:
-                gh_repos_context = f"Tried to fetch GitHub for {gh_user} but the API failed."
+                pass
 
         drafter_prompt = f"""
-        You are the Brain and Overviewer of the CVOS Resume System.
+        You are the proactive Lead Resume Engineer for CVOS. You DRIVE the conversation step-by-step.
         CURRENT FORM STATE: {json.dumps(compressed_state)}
-        SYSTEM DATA: Score: {current_score}/100. GitHub Data: {gh_repos_context}
+        SYSTEM DATA: GitHub Data: {gh_repos_context}
         
-        CRITICAL INSTRUCTION 1: If the user asks you to improve, rewrite, or add something, you MUST generate the actual text and put it inside `suggested_state_updates`. Valid keys: "name", "email", "phone", "linkedin", "githubUsername", "targetRole", "headline", "skillsSnapshot", "experienceDetails", "educationDetails", "featuredProjectsText".
-        CRITICAL INSTRUCTION 2: IF the user JUST asks to "preview", "generate", or "update the PDF", DO NOT modify any text fields. Leave `suggested_state_updates` completely EMPTY {{}}.
+        {next_step_directive}
         
-        ANTI-LOOP RULE: Do NOT include keys that are not changing.
+        ANTI-LAZY DIRECTIVES (CRITICAL):
+        1. IF YOU SAY YOU DID IT, YOU MUST OUTPUT THE DATA: If you say "I wrote your profile summary", you MUST write the actual summary text inside `suggested_state_updates["headline"]`. DO NOT leave it empty.
+        2. AUTOPILOT SUMMARY: If the user asks for a profile summary, DO NOT ask for "more background". Instantly read the SYSTEM DATA, write a punchy 2-sentence technical summary, put it in `suggested_state_updates["headline"]`, and print it in the chat.
+        3. SKILL FILTERING: If the user asks to remove skills (e.g., "remove yt-dlp"), you MUST output the newly filtered list of skills in `suggested_state_updates["skillsSnapshot"]`.
         
         OUTPUT STRICT JSON EXACTLY MATCHING THIS SKELETON:
         {{
-            "suggested_state_updates": {{}},
+            "suggested_state_updates": {{"headline": "...", "skillsSnapshot": "..."}},
             "reply_to_user": "Your reply here.",
             "action": "none"
         }}
@@ -109,15 +129,18 @@ async def chat_endpoint(request: ChatRequest):
         if request.user_input:
             messages_1.append({"role": "user", "content": request.user_input})
 
-        res_1 = await asyncio.to_thread(
-            client.chat.completions.create,
-            messages=messages_1,
-            model="llama-3.1-8b-instant",
-            temperature=0.2, 
-            max_tokens=2048,
-            response_format={"type": "json_object"}
-        )
-        agent_1_draft = json.loads(res_1.choices[0].message.content)
+        try:
+            res_1 = await asyncio.to_thread(
+                client.chat.completions.create,
+                messages=messages_1,
+                model="llama-3.1-8b-instant",
+                temperature=0.2, 
+                max_tokens=1500,
+                response_format={"type": "json_object"}
+            )
+            agent_1_draft = json.loads(res_1.choices[0].message.content)
+        except Exception:
+            agent_1_draft = {"suggested_state_updates": {}, "reply_to_user": "Processing...", "action": "none"}
 
         draft_updates_json = json.dumps(agent_1_draft.get('suggested_state_updates', {}))
         
@@ -128,52 +151,67 @@ async def chat_endpoint(request: ChatRequest):
         ASSISTANT'S DRAFT REPLY: "{agent_1_draft.get('reply_to_user', '')}"
         ASSISTANT'S DRAFT UPDATES: {draft_updates_json}
         
-        SYSTEM CONTEXT: 
-        - Resume Score: {current_score}/100
-        - GitHub Data: {gh_repos_context}
+        SYSTEM CONTEXT: GitHub Data: {gh_repos_context}
 
         YOUR JOB:
-        1. AGENTIC ACTION: If the user asks to "generate", "preview", "create", or "update the pdf":
+        1. PUNISH LAZINESS: If the Drafter's reply says "I created a summary" but `suggested_state_updates` does NOT contain "headline", you MUST write the summary yourself using the GitHub Data and put it in `suggested_state_updates["headline"]`.
+        2. AGENTIC ACTION: If the user asks to "generate", "preview", or "create the pdf":
            - Set `"action": "trigger_generation"`.
-           - Set `"suggested_state_updates": {{}}` (EMPTY!). Do not rewrite the resume just to preview it.
-           - Tell them: "I am generating your resume right now! You can view and download it in the 'Final Output' tab."
-        2. VERIFY UPDATES: If the user explicitly asked to change text (skills, summary, etc), ensure the text is actually written in `suggested_state_updates`.
-        
-        CRITICAL OUTPUT RULE: Keep the `reply_to_user` conversational, short, and NEVER output raw JSON, newline characters (\\n), or the full resume in the chat.
+           - Set `"suggested_state_updates": {{}}` ONLY if no other text updates were requested in the same message. 
+        3. ANTI-FLUFF FORMAT: "[Seniority] [Role] with experience building [Types of Systems/Projects] using [Core Technologies]."
+
+        CRITICAL OUTPUT RULE: Keep the `reply_to_user` short. NEVER output raw JSON in the chat.
         
         OUTPUT STRICT JSON EXACTLY MATCHING THIS SKELETON:
         {{
-            "suggested_state_updates": {{}},
-            "reply_to_user": "Your short conversational reply.",
+            "suggested_state_updates": {{"key": "value"}},
+            "reply_to_user": "Your short conversational proactive reply.",
             "action": "none"
         }}
         """
 
-        res_2 = await asyncio.to_thread(
-            client.chat.completions.create,
-            messages=[{"role": "system", "content": critic_prompt}],
-            model="llama-3.3-70b-versatile",
-            temperature=0.1, 
-            max_tokens=2048,
-            response_format={"type": "json_object"}
-        )
+        try:
+            res_2 = await asyncio.to_thread(
+                client.chat.completions.create,
+                messages=[{"role": "system", "content": critic_prompt}],
+                model="llama-3.3-70b-versatile",
+                temperature=0.1, 
+                max_tokens=1500,
+                response_format={"type": "json_object"}
+            )
+            final_output = json.loads(res_2.choices[0].message.content)
+        except Exception:
+            final_output = {
+                "suggested_state_updates": {},
+                "reply_to_user": "I'm processing a high volume of data. Please try sending that again.",
+                "action": "none"
+            }
         
-        final_output = json.loads(res_2.choices[0].message.content)
+        sanitized_updates = {}
+        if isinstance(final_output.get("suggested_state_updates"), dict):
+            for k, v in final_output["suggested_state_updates"].items():
+                if isinstance(v, (str, int, float, bool)):
+                    sanitized_updates[k] = str(v)
+                elif isinstance(v, list):
+                    sanitized_updates[k] = ", ".join([str(i) for i in v])
         
-        if gh_user and "githubUsername" not in final_output.get("suggested_state_updates", {}):
-            if "suggested_state_updates" not in final_output:
-                final_output["suggested_state_updates"] = {}
-            # Only inject github if it wasn't there to avoid breaking empty updates
+        final_output["suggested_state_updates"] = sanitized_updates
+        final_output["reply_to_user"] = str(final_output.get("reply_to_user", "I processed that."))
+        
+        if final_output.get("action") not in ["none", "trigger_generation"]:
+            final_output["action"] = "none"
+
+        if gh_user and "githubUsername" not in final_output["suggested_state_updates"]:
             if not request.current_state.get("githubUsername"):
                 final_output["suggested_state_updates"]["githubUsername"] = gh_user
             
         return final_output
 
     except Exception as e:
-        print(f"Chat API Error: {e}")
+        print(f"Chat API Absolute Error: {e}")
         return {
             "suggested_state_updates": {},
-            "reply_to_user": f"I encountered an internal error: {str(e)}",
+            "reply_to_user": "The connection timed out. Please try sending your message again.",
             "action": "none"
         }
 
@@ -217,14 +255,19 @@ async def create_resume(request: ResumeRequest, background_tasks: BackgroundTask
         projects_data = []
         if gh_user:
             repos = await asyncio.to_thread(get_best_repos, gh_user, limit=3)
-            for repo in repos:
+            
+            # --- MASSIVE OPTIMIZATION APPLIED HERE ---
+            # Concurrently generate project bullets instead of sequentially looping
+            async def process_repo(repo):
                 bullets = await asyncio.to_thread(generate_project_bullets, repo)
-                projects_data.append({
+                return {
                     "name": repo["name"],
                     "language": repo["language"],
                     "url": repo["url"],
                     "bullets": bullets
-                })
+                }
+            
+            projects_data = await asyncio.gather(*(process_repo(repo) for repo in repos))
 
         for skill in enhanced_data.get("skills", []):
             if isinstance(skill.get("list"), list):
