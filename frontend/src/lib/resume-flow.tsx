@@ -319,7 +319,7 @@ export function ResumeFlowProvider({ children }: { children: React.ReactNode }) 
         current_state: currentState.intake
       };
 
-      const response = await fetch("https://cvos.onrender.comapi/chat", {
+      const response = await fetch("https://cvos.onrender.com/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
