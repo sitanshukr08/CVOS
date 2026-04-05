@@ -51,6 +51,9 @@ def get_rag_examples(user_data: dict, domain: str) -> str:
             where=where_filter
         )
         
+        if not results or not results.get('documents') or not results['documents'][0]:
+            return ""
+
         bullets = results['documents'][0]
         metadatas = results['metadatas'][0]
         
@@ -58,7 +61,7 @@ def get_rag_examples(user_data: dict, domain: str) -> str:
         learned_bullets = []
         
         for b, m in zip(bullets, metadatas):
-            if m.get("source") == "cvos-self-learned":
+            if m and m.get("source") == "cvos-self-learned":
                 learned_bullets.append(b)
             else:
                 dataset_bullets.append(b)
@@ -72,15 +75,30 @@ def get_rag_examples(user_data: dict, domain: str) -> str:
         rag_prompt = "ELITE STYLISTIC INSPIRATION:\n"
         for b in final_mix: rag_prompt += f"- {b}\n"
         return rag_prompt
-    except:
+    except Exception as e:
+        print(f"RAG Fetch Warning: {e}")
         return ""
 
 def validate_schema(data, fallback):
+    """Deep structural validation to prevent LaTeX/PDF crashes"""
     if not isinstance(data, dict): return fallback
     if not isinstance(data.get("profile"), str): data["profile"] = fallback.get("profile", "")
-    if not isinstance(data.get("skills"), list): data["skills"] = fallback.get("skills", [])
-    if not isinstance(data.get("education"), list): data["education"] = fallback.get("education", [])
-    if not isinstance(data.get("experience"), list): data["experience"] = fallback.get("experience", [])
+    
+    if not isinstance(data.get("skills"), list): 
+        data["skills"] = fallback.get("skills", [])
+    
+    if not isinstance(data.get("education"), list): 
+        data["education"] = fallback.get("education", [])
+        
+    if not isinstance(data.get("experience"), list): 
+        data["experience"] = fallback.get("experience", [])
+    else:
+        # Enforce bullet array exists for every job
+        for exp in data["experience"]:
+            if not isinstance(exp, dict): continue
+            if "bullets" not in exp or not isinstance(exp["bullets"], list):
+                exp["bullets"] = []
+                
     return data
 
 def enhance_user_data(raw_data: dict, github_profile_readme: str, domain: str = "General", feedback_issues: list = None, original_data: dict = None) -> dict:
@@ -109,7 +127,7 @@ def enhance_user_data(raw_data: dict, github_profile_readme: str, domain: str = 
        - <2 yrs experience -> "Motivated", "Aspiring", "Results-driven"
        - 2-5 yrs experience -> "Experienced", "Skilled"
        - 5+ yrs -> "Senior", "Lead"
-    6. PROFILE FORMULA: [Seniority-appropriate adjective] [Target Role] specializing in [Top 2-3 skills]. Do NOT list specific past companies, internships, or timelines in the profile. Keep it strictly to a 1-2 sentence professional summary.
+    6. PROFILE FORMULA: [Seniority-appropriate adjective] [Target Role] specializing in [Top 2-3 skills]. Do NOT list specific past companies, internships, or timelines in the profile. Keep it strictly focused on capabilities.
     7. MISSING DATA: Output "" for strings and [] for arrays.
 
     OUTPUT EXACTLY THIS JSON:
@@ -129,7 +147,8 @@ def enhance_user_data(raw_data: dict, github_profile_readme: str, domain: str = 
         )
         parsed = json.loads(res.choices[0].message.content)
         return validate_schema(parsed, raw_data)
-    except Exception:
+    except Exception as e:
+        print(f"LLM Enhancement Error: {e}")
         return raw_data
 
 def generate_project_bullets(repo_data: dict) -> list:
@@ -145,8 +164,13 @@ def generate_project_bullets(repo_data: dict) -> list:
             response_format={"type": "json_object"}
         )
         return json.loads(res.choices[0].message.content).get("bullets", [])
-    except: 
-        return []
+    except Exception as e: 
+        print(f"Project Bullet LLM Error: {e}")
+        return [
+            f"Developed core architecture using {repo_data.get('language', 'industry-standard tools')}.",
+            "Maintained version control and implemented scalable features.",
+            "Optimized codebase for readability and long-term performance."
+        ]
 
 def recursive_enhance(raw_data: dict, github_profile_readme: str, domain: str = "General"):
     current_data = raw_data

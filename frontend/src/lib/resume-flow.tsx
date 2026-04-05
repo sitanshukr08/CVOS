@@ -45,6 +45,7 @@ interface FlowState {
     completedAt: string | null;
     pdfUrl: string | null;
     triggerNow?: boolean;
+    lastGeneratedIntake?: string | null; // Tracks if data changed since last PDF
   };
 }
 
@@ -111,7 +112,8 @@ const defaultState: FlowState = {
     stageIndex: 0,
     completedAt: null,
     pdfUrl: null,
-    triggerNow: false
+    triggerNow: false,
+    lastGeneratedIntake: null
   }
 };
 
@@ -453,7 +455,15 @@ export function ResumeFlowProvider({ children }: { children: React.ReactNode }) 
   const startGeneration = React.useCallback(async () => {
     setState((current) => ({
       ...current,
-      generation: { running: true, stageIndex: 0, completedAt: null, pdfUrl: null, triggerNow: false }
+      generation: { 
+        ...current.generation,
+        running: true, 
+        stageIndex: 0, 
+        completedAt: null, 
+        pdfUrl: null, 
+        triggerNow: false,
+        lastGeneratedIntake: JSON.stringify(current.intake) // Save snapshot of current data
+      }
     }));
 
     try {
@@ -508,6 +518,7 @@ export function ResumeFlowProvider({ children }: { children: React.ReactNode }) 
       setState((current) => ({
         ...current,
         generation: {
+          ...current.generation,
           running: false,
           stageIndex: GENERATION_STAGE_COUNT,
           completedAt: new Date().toISOString(),
@@ -519,7 +530,7 @@ export function ResumeFlowProvider({ children }: { children: React.ReactNode }) 
       console.error("Generation failed:", error);
       setState((current) => ({
         ...current,
-        generation: { running: false, stageIndex: 0, completedAt: null, pdfUrl: null, triggerNow: false }
+        generation: { ...current.generation, running: false, stageIndex: 0, completedAt: null, pdfUrl: null, triggerNow: false }
       }));
       alert(`Generation Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
     }
@@ -538,7 +549,7 @@ export function ResumeFlowProvider({ children }: { children: React.ReactNode }) 
   const resetGeneration = React.useCallback(() => {
     setState((current) => ({
       ...current,
-      generation: { running: false, stageIndex: 0, completedAt: null, pdfUrl: null, triggerNow: false }
+      generation: { ...current.generation, running: false, stageIndex: 0, completedAt: null, pdfUrl: null, triggerNow: false }
     }));
   }, []);
 

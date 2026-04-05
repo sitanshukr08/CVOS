@@ -5,61 +5,79 @@ import { useResumeFlow } from "@/lib/resume-flow";
 import { Navbar1 } from "@/components/ui/shadcnblocks-com-navbar1";
 
 const reviewPrinciples = [
-  "Show the draft in editable sections instead of one long wall of text.",
-  "Make it obvious which block is ready, which needs revision, and which can be regenerated.",
-  "Use review to control the draft before scoring, not to restart intake."
+  "Review and refine your resume content section by section.",
+  "Edit content directly to ensure accuracy and professional tone.",
+  "Finalize formatting before generating the production PDF."
 ] as const;
 
 const reviewGuidance = [
-  "Edit sections directly where possible so the user stays in context.",
-  "Keep regenerate actions local to a block instead of refreshing the whole draft.",
-  "Make it easy to understand what changed before moving to score."
+  "Make direct edits to any section to perfectly align with your target role.",
+  "Ensure your technical skills accurately match your experience.",
+  "Verify all metrics and outcomes before final generation."
 ] as const;
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15, delayChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.98 },
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { type: "spring", stiffness: 100, damping: 15 } 
+  }
+};
 
 export function ResumeReviewPage() {
   const { state, updateIntakeField } = useResumeFlow();
-  const selectedProjects = state.githubImport.projects.filter((project) => project.selected);
+  const selectedProjects = (state?.githubImport?.projects || []).filter((project) => project?.selected);
   
   const reviewSections = [
     {
-      title: "Profile summary",
+      title: "Profile Summary",
       description:
-        "Refine the profile line before the evaluator reads it. This is where role direction and tone should feel stable.",
-      value: state.intake.headline,
+        "Refine your professional summary to immediately establish your value proposition.",
+      value: state?.intake?.headline || "",
       field: "headline" as const,
-      placeholder: "Write the reviewed profile summary here..."
+      placeholder: "Write your refined profile summary here..."
     },
     {
-      title: "Experience",
+      title: "Professional Experience",
       description:
-        "Inspect the strongest experience details and tighten the evidence before scoring.",
-      value: state.intake.experienceDetails,
+        "Ensure your experience highlights key achievements, metrics, and technical depth.",
+      value: state?.intake?.experienceDetails || "",
       field: "experienceDetails" as const,
-      placeholder: "Describe reviewed experience content here..."
+      placeholder: "Detail your optimized experience content here..."
     },
     {
-      title: "Projects",
+      title: "Featured Projects",
       description:
-        "The selected project set should be visible here before it flows into the final resume draft.",
-      value: state.intake.featuredProjectsText,
+        "Verify the selected projects that will be featured on your final document.",
+      value: state?.intake?.featuredProjectsText || "",
       field: "featuredProjectsText" as const,
-      placeholder: "Selected projects will appear here..."
+      placeholder: "Your selected projects will appear here..."
     },
     {
-      title: "Skills snapshot",
+      title: "Technical Skills",
       description:
-        "Keep the core technical capabilities readable and accurate before the evaluator turns them into a score.",
-      value: state.intake.skillsSnapshot,
+        "Review your technical skills to ensure they align with industry expectations.",
+      value: state?.intake?.skillsSnapshot || "",
       field: "skillsSnapshot" as const,
-      placeholder: "Reviewed skills will appear here..."
+      placeholder: "Your organized skills will appear here..."
     },
     {
-      title: "Education",
+      title: "Education & Certifications",
       description:
-        "Preserve the education details as a separate block so the final draft stays easy to validate.",
-      value: state.intake.educationDetails,
+        "Confirm your educational background and relevant institutional details.",
+      value: state?.intake?.educationDetails || "",
       field: "educationDetails" as const,
-      placeholder: "Reviewed education details will appear here..."
+      placeholder: "Your verified education details will appear here..."
     }
   ] as const;
 
@@ -68,91 +86,83 @@ export function ResumeReviewPage() {
       <Navbar1 />
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-12">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
           className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]"
         >
           <aside className="space-y-6 lg:sticky lg:top-24 lg:h-fit">
-            <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#15191d,#0d1013)] p-6">
-              <p className="text-xs uppercase tracking-[0.34em] text-[#85a7b0]">What it should do</p>
+            <motion.div variants={itemVariants} className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#15191d,#0d1013)] p-6 transition-all hover:border-white/20">
+              <p className="text-xs uppercase tracking-[0.34em] text-[#85a7b0]">Review Capabilities</p>
               <div className="mt-5 space-y-3">
                 {reviewPrinciples.map((item) => (
-                  <div
+                  <motion.div
                     key={item}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm leading-7 text-[#d8d2c6]"
+                    whileHover={{ scale: 1.02, x: 5 }}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm leading-7 text-[#d8d2c6] transition-colors hover:bg-white/[0.08]"
                   >
                     {item}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#15191d,#0d1013)] p-6">
+            <motion.div variants={itemVariants} className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#15191d,#0d1013)] p-6 transition-all hover:border-white/20">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#85a7b0]/20 bg-[#85a7b0]/10 px-4 py-2 text-sm text-[#e7e1d5]">
                 <ShieldCheck className="h-4 w-4 text-[#dfc497]" />
-                Review guidance
+                Best Practices
               </div>
               <div className="mt-5 space-y-3">
                 {reviewGuidance.map((rule) => (
-                  <div
+                  <motion.div
                     key={rule}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm leading-7 text-[#d8d2c6]"
+                    whileHover={{ scale: 1.02, x: 5 }}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm leading-7 text-[#d8d2c6] transition-colors hover:bg-white/[0.08]"
                   >
                     {rule}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </aside>
 
           <div className="space-y-8">
             <motion.section
-              initial={{ opacity: 0, y: 28 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, amount: 0.2 }}
-              transition={{ duration: 0.56, ease: [0.22, 1, 0.36, 1] }}
-              className="rounded-[2.2rem] border border-white/10 bg-[linear-gradient(180deg,#15191d,#0d1013)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-8"
+              variants={itemVariants}
+              className="rounded-[2.2rem] border border-white/10 bg-[linear-gradient(180deg,#15191d,#0d1013)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-8 hover:shadow-[0_24px_80px_rgba(0,0,0,0.4)] transition-all duration-500"
             >
               <div className="grid gap-6 md:grid-cols-3">
-                <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-5">
-                  <p className="text-xs uppercase tracking-[0.28em] text-[#85a7b0]">Draft source</p>
+                <motion.div whileHover={{ y: -5 }} className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-5 transition-colors hover:bg-white/[0.06]">
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#85a7b0]">Content Source</p>
                   <p className="mt-4 text-sm leading-7 text-[#d8d2c6]">
-                    Intake, assistant, and GitHub import should already feed this review surface.
+                    Data is aggregated from your intake form, AI optimizations, and GitHub imports.
                   </p>
-                </div>
-                <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-5">
-                  <p className="text-xs uppercase tracking-[0.28em] text-[#85a7b0]">Block actions</p>
+                </motion.div>
+                <motion.div whileHover={{ y: -5 }} className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-5 transition-colors hover:bg-white/[0.06]">
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#85a7b0]">Direct Editing</p>
                   <p className="mt-4 text-sm leading-7 text-[#d8d2c6]">
-                    Each section should support local editing and local regeneration.
+                    Refine each section manually to ensure precise phrasing and factual accuracy.
                   </p>
-                </div>
-                <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-5">
-                  <p className="text-xs uppercase tracking-[0.28em] text-[#85a7b0]">Next page</p>
+                </motion.div>
+                <motion.div whileHover={{ y: -5 }} className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-5 transition-colors hover:bg-white/[0.06]">
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#85a7b0]">Quality Evaluation</p>
                   <p className="mt-4 text-sm leading-7 text-[#d8d2c6]">
-                    Quality score should evaluate this reviewed draft, not unfiltered upstream input.
+                    The finalized text will be scored for quality before compiling the final PDF.
                   </p>
-                </div>
+                </motion.div>
               </div>
             </motion.section>
 
-            <div className="space-y-4">
-              {reviewSections.map((section, index) => (
+            <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-4">
+              {reviewSections.map((section) => (
                 <motion.article
                   key={section.title}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.2 }}
-                  transition={{
-                    duration: 0.52,
-                    ease: [0.22, 1, 0.36, 1],
-                    delay: index * 0.04
-                  }}
-                  className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#15191d,#0d1013)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
+                  variants={itemVariants}
+                  className="group rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#15191d,#0d1013)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.22)] transition-all duration-300 hover:border-[#85a7b0]/30"
                 >
                   <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
                     <div>
-                      <div className="inline-flex items-center gap-2 rounded-full border border-[#85a7b0]/20 bg-[#85a7b0]/10 px-4 py-2 text-sm text-[#e7e1d5]">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-[#85a7b0]/20 bg-[#85a7b0]/10 px-4 py-2 text-sm text-[#e7e1d5] transition-all group-hover:bg-[#85a7b0]/20">
                         <FilePenLine className="h-4 w-4 text-[#dfc497]" />
                         {section.title}
                       </div>
@@ -161,34 +171,39 @@ export function ResumeReviewPage() {
                       </p>
                     </div>
 
-                    <div className="rounded-[1.8rem] border border-dashed border-white/10 bg-white/[0.02] p-5">
-                      <p className="text-xs uppercase tracking-[0.28em] text-[#85a7b0]">Section preview</p>
+                    <motion.div 
+                      whileFocus={{ scale: 1.01 }} 
+                      className="rounded-[1.8rem] border border-dashed border-white/10 bg-white/[0.02] p-5 transition-colors focus-within:border-[#dfc497]/40 focus-within:bg-white/[0.04]"
+                    >
+                      <p className="text-xs uppercase tracking-[0.28em] text-[#85a7b0]">Section Preview</p>
                       
                       <textarea
                         value={section.value || ""}
                         onChange={(event) => updateIntakeField(section.field, event.target.value)}
                         placeholder={section.placeholder}
                         rows={section.title === "Experience" ? 8 : 6}
-                        className="mt-5 w-full resize-none rounded-[1.4rem] border border-white/10 bg-[#0f1317] px-4 py-4 text-sm leading-7 text-[#e7e1d5] placeholder:text-[#8f887c] outline-none transition focus:border-[#85a7b0]/40"
+                        className="mt-5 w-full resize-none rounded-[1.4rem] border border-white/10 bg-[#0f1317] px-4 py-4 text-sm leading-7 text-[#e7e1d5] placeholder:text-[#8f887c] outline-none transition focus:border-[#85a7b0]/40 focus:ring-1 focus:ring-[#85a7b0]/40"
                       />
 
-                      {section.title === "Projects" && selectedProjects.length > 0 ? (
-                        <div className="mt-6 flex flex-wrap gap-2">
+                      {section.title === "Featured Projects" && selectedProjects.length > 0 ? (
+                        <motion.div layout className="mt-6 flex flex-wrap gap-2">
                           {selectedProjects.map((project) => (
-                            <div
+                            <motion.div
                               key={project.id}
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
                               className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-[#d9d3c8]"
                             >
                               {project.name}
-                            </div>
+                            </motion.div>
                           ))}
-                        </div>
+                        </motion.div>
                       ) : null}
-                    </div>
+                    </motion.div>
                   </div>
                 </motion.article>
               ))}
-            </div>
+            </motion.div>
           </div>
         </motion.div>
       </section>
