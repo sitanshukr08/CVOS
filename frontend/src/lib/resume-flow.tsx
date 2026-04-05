@@ -319,7 +319,7 @@ export function ResumeFlowProvider({ children }: { children: React.ReactNode }) 
         current_state: currentState.intake
       };
 
-      const response = await fetch("http://localhost:8000/api/chat", {
+      const response = await fetch("https://cvos.onrender.comapi/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
@@ -412,7 +412,7 @@ export function ResumeFlowProvider({ children }: { children: React.ReactNode }) 
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/api/github-repos/${username}`);
+      const response = await fetch(`https://cvos.onrender.com/api/github-repos/${username}`);
       
       if (!response.ok) {
         throw new Error("Failed to fetch repositories");
@@ -501,7 +501,7 @@ export function ResumeFlowProvider({ children }: { children: React.ReactNode }) 
         }
       };
 
-      const response = await fetch("http://localhost:8000/generate-resume", {
+      const response = await fetch("https://cvos.onrender.com/generate-resume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData),

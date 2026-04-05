@@ -20,7 +20,7 @@ from evaluator import evaluate_profile, get_hybrid_domain
 
 load_dotenv(ROOT_DIR / ".env")
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-API_URL = "http://localhost:8000/generate-resume"
+API_URL = "https://cvos.onrender.com/generate-resume"
 SESSION_FILE = str(CHAT_SESSION_FILE)
 
 default_state = {
