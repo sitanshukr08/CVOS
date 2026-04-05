@@ -1,84 +1,96 @@
-# CVOS (Curriculum Vitae Operating System)
+# CVOS (Curriculum Vitae Operating System) 📄✨
 
-CVOS is an autonomous, AI-driven backend engine that generates elite, ATS-optimized LaTeX resumes. It does not just format text; it uses a recursive evaluation loop, Retrieval-Augmented Generation (RAG), and strict hallucination guards to engineer perfect resume bullets, infer skills from GitHub, and compile a production-ready PDF.
+An autonomous, AI-driven engine and premium frontend interface that generates elite, ATS-optimized LaTeX resumes. 
 
-## Core Architecture
-
-CVOS operates on a recursive cognitive loop:
-1. **Data Collection:** Gathers raw, unstructured user data (via chat or future frontend form).
-2. **Context Enrichment:** Scrapes GitHub to fetch real project data and language statistics.
-3. **The Enhancement Loop:** The LLM (Groq) rewrites the data using high-performing RAG examples.
-4. **The Evaluator:** An NLP-based scoring system grades the output. If the score is under 95, it feeds the errors back to the LLM to try again (Convergence Loop).
-5. **Self-Learning:** If the generated resume scores >95 with high confidence, the system hashes and saves the generated bullets back into its vector database to learn for next time.
-6. **Compilation:** The finalized JSON is injected into a LaTeX template and compiled to PDF.
+CVOS doesn't just format text; it acts as a Senior Technical Recruiter. It uses a dual-LLM agentic loop, Retrieval-Augmented Generation (RAG), and strict hallucination guards to engineer perfect resume bullets, infer skills from GitHub, and compile a production-ready PDF.
 
 ---
 
-## File Structure & System Breakdown
+## 🌟 Core Features
 
-Here is a detailed explanation of the core backend files so frontend developers know exactly where data is processed.
-
-### 1. `core-backend/app.py` (The API Gateway)
-This is the FastAPI server. Currently, it initializes the backend services, but moving forward, this will house the REST endpoints (like `/generate-resume` or `/evaluate-profile`) that the frontend React/Next.js application will call.
-
-### 2. `feature-1-chat-agent/chat_agent.py` (State Management & CLI)
-This is the current interactive terminal interface. 
-- It manages the user's state using a local `session.json` file.
-- It acts as the orchestrator: prompting the user, gathering missing fields, calling the GitHub fetcher, and eventually triggering the AI writer and PDF compiler.
-- For a frontend integration, the state management logic here will be replaced by the frontend's global state (like Redux or Zustand).
-
-### 3. `feature-3-writer/writer.py` (The LLM Engine & RAG Integrator)
-This is the brain of the AI. 
-- **RAG Implementation:** Queries ChromaDB for "Golden Bullets" matching the user's domain (Tech vs. Finance) to show the LLM stylistic examples.
-- **Recursive Enhancement:** Contains the `recursive_enhance` loop. It commands the LLM to rewrite the resume, passes the output to the Evaluator, and repeats until the resume achieves a perfect score.
-- **Self-Learning:** If the Evaluator yields a 95+ score, this script hashes the new bullets and saves them permanently into ChromaDB.
-
-### 4. `feature-4-evaluator/evaluator.py` (The Strict Validator)
-This script prevents the LLM from outputting garbage or hallucinating. It does not use AI; it uses strict Python logic, NLP, and Regex.
-- **Hallucination Guards:** Compares the AI's output against the user's original raw input. If the AI invents a metric (like "increased sales by 50%") or a fake tool, it slaps a massive penalty on the score.
-- **Structural Enforcement:** Uses Regex to ensure every bullet starts with a strong action verb and falls within the 10-30 word count limit.
-- Returns a detailed `sections` score and an overall `confidence` percentage.
-
-### 5. `feature-2-github-fetcher/github_fetcher.py` (Zero-Shot Project Extraction)
-Given just a GitHub username, this script hits the public GitHub REST API.
-- It fetches the user's top repositories, primary languages, and descriptions.
-- It passes this data back to the LLM to automatically generate highly technical, ATS-friendly project bullets without the user typing a single word.
-
-### 6. `feature-5-pdf-generator/pdf_generator.py` (The Compiler)
-Takes the finalized, perfect JSON data and dynamically injects it into the LaTeX template at `feature-5-pdf-generator/resume_template.tex` using Jinja2. It then runs system-level `pdflatex` commands to generate a clean, perfectly formatted PDF.
-
-### 7. `database/ingest_to_chroma.py` (Database Initializer)
-A one-time setup script. It reads a massive Kaggle dataset of standard resumes, filters out 99% of the noise to find only the "Golden Bullets" (sentences with perfect verbs, metrics, and technical depth), and embeds them into the local ChromaDB vector database.
+* **🤖 Agentic Chat Assistant:** A proactive, dual-LLM architecture (Drafter + Critic). It actively interviews you, extracts measurable metrics, filters fluff, and rewrites your bullets in real-time.
+* **⚡ Concurrent GitHub Integration:** Enter your GitHub username, and CVOS will concurrently fetch your top public repositories, analyze the code/languages, and generate ATS-friendly project bullets in seconds.
+* **🔄 Live Sync PDF Generation:** A beautiful, Framer Motion-powered review dashboard. Edit your resume data and instantly re-compile a production-ready LaTeX PDF.
+* **🧠 Recursive RAG & Evaluation:** Uses ChromaDB to feed the AI "Golden Resume" examples. A strict Python evaluator grades the LLM's output and forces it to rewrite until the resume achieves a 95+ score.
+* **✨ Premium UI:** Buttery-smooth physics, spring animations, and highly responsive components built with TailwindCSS and Framer Motion.
 
 ---
 
-## Setup & Installation
+## 🏗️ Tech Stack
 
-**1. Clone and Install Dependencies**
+### **Frontend**
+* React (Vite / Next.js)
+* TailwindCSS & Shadcn UI
+* Framer Motion (Advanced Spring Physics)
+* Lucide React (Iconography)
+
+### **Backend**
+* Python 3.10+ & FastAPI
+* Groq API (Llama 3.3 70B & Llama 3.1 8B)
+* ChromaDB (Vector Database for RAG)
+* `pdflatex` (LaTeX to PDF Compilation)
+* `asyncio` (Concurrent processing)
+
+---
+
+## ⚙️ Local Setup & Installation
+
+### 1. Prerequisites
+* **Node.js** (v18+)
+* **Python** (v3.10+)
+* **LaTeX Distribution:** You must have `pdflatex` installed on your system to compile the PDFs.
+  * **Mac:** `brew install mactex` or download MacTeX.
+  * **Linux:** `sudo apt-get install texlive-full`
+  * **Windows:** Download and install MiKTeX.
+
+### 2. Backend Setup
+Navigate to the root directory and set up your Python environment:
+
 ```bash
+# Create a virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-pip install -r core-backend/requirements.txt
-```
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
 
-**2. Environment Variables**
-Create a `.env` file in the root directory and add your API key:
-```text
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment variables
+# Create a .env file in the root directory and add:
 GROQ_API_KEY=your_groq_api_key_here
+
+# Run the FastAPI server
+cd core-backend
+python app.py
 ```
 
-**3. Initialize the Vector Database**
-Run this once to build the RAG engine memory:
+*The backend will run on `http://localhost:8000`*
+
+### 3. Frontend Setup
+Open a new terminal and navigate to the frontend directory:
+
 ```bash
-python database/ingest_to_chroma.py
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
 ```
 
-**4. Run the Application**
-To test the interactive agent:
-```bash
-python feature-1-chat-agent/chat_agent.py
-```
-To run the API server (for frontend integration):
-```bash
-python core-backend/app.py
-```
+*The frontend will run on `http://localhost:5173` (or 3000)*
+
+---
+
+## 🗺️ System Architecture 
+
+* **Data Intake:** The user fills out basic professional information and imports relevant GitHub repositories.
+* **Agentic Refinement:** The user chats with the CVOS Assistant to enhance bullet points. A Critic LLM oversees the process to ensure the Drafter LLM accurately applies updates directly to the global JSON state.
+* **The Enhancement Loop:** When the user clicks Generate, the backend LLM rewrites the data using high-performing RAG (Retrieval-Augmented Generation) examples to ensure maximum impact.
+* **The Evaluator:** An NLP-based scoring system meticulously grades the output. If the score falls below 95, it feeds the errors back to the LLM to rewrite and try again (Convergence Loop).
+* **Compilation:** The finalized, high-scoring JSON is injected into a professional LaTeX template and compiled into a beautifully formatted PDF.
+
+---
+
+## 📝 License
+This project is open-source and available under the [MIT License](LICENSE).
